@@ -251,10 +251,10 @@ ldp.Print_Defintion()
 
 if args.csf: ldp.Print_CSFppm()
 if args.utm: ldp.Print_UTM()
-if 1:
-    dfLDP = ldp.DoTransformation( 'UTM_LDP' )
-    print( dfLDP.to_markdown( floatfmt=",.3f" ) )
-    dfUTM = ldp.DoTransformation( 'LDP_UTM' )
-    print( dfUTM.to_markdown( floatfmt=",.3f" ) )
+
+dfLDP = ldp.DoTransformation( 'UTM_LDP' )
+print( dfLDP.to_markdown( floatfmt=",.3f" ) )
+dfUTM = ldp.DoTransformation( 'LDP_UTM' )
+print( dfUTM.to_markdown( floatfmt=",.3f" ) )
 ############################################################################
 
