@@ -294,8 +294,6 @@ if args.csf: ldp.Print_CSFppm()
 
 if args.utm: ldp.Print_UTM()
 
-import pdb ;pdb.set_trace()
-
 if 'UTM_LDP' in ldp.DATA.index:
     dfLDP = ldp.DoTransformation( 'UTM_LDP' )
     print( dfLDP.to_markdown( floatfmt=",.3f" ) )
