@@ -4,12 +4,20 @@ PROGRAM : Constr_LDP
 ***Design of a Low Distortion Projection for a Construction Project***</br>  
  Program to design  low distortion projections (LDPs) using conformal map projections (TM) for minimizing linear distortion between projected coordinates eg. UTM grid and the true distance at the surface of the engineering project.</br>  
 Phisan Santitamonont,</br>  
-Faculty of Engineering, Chulalongkorn University © 2022
-*Phisan.Chula@gmail.com*</br>
+Faculty of Engineering, Chulalongkorn University ©2022-2026
+*Phisan.Chula@gmail.com , Phisan.S@chula.ac.th*</br>
 
 History:  
-  Update :  30 May 2024
+  Initial : 30 May 2024
+
 """
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    message="You will likely lose important projection information",
+    category=UserWarning,
+)
 import tomllib
 import sys,re
 import numpy as np
@@ -46,14 +54,15 @@ class LDP_Design:
         self.STEM = Path( args.LDP_TOML ).stem
         Path('./CACHE').mkdir( parents=True, exist_ok=True )
         self.GetOFFSET_PP()
-        #import pdb ; pdb.set_trace()
-        ###########################################################
         self.ELLPS  = pgd.datums.Ellipsoids.WGS84
+        ###########################################################
         TGM_2017 = "/usr/share/GeographicLib/geoids/tgm2017-1.pgm"
+        base_dir = Path(__file__).resolve().parent
+        tgm_path = base_dir / "tgm2017-1.pgm" # side-car file
         if Path( TGM_2017 ).is_file():
             self.GEOID = pgd.geoids.GeoidKarney( TGM_2017 )
         else:
-            self.GEOID = pgd.geoids.GeoidKarney( './tgm2017-1.pgm' )
+            self.GEOID = pgd.geoids.GeoidKarney( str(tgm_path) )
         self.dfPP = self.LoadTestPoint()
         UNDUL = self.GEOID.height( self.dfPP.lat.mean(),self.dfPP.lng.mean() )
         self.MSL_PP = self.dfPP.MSL.mean() + self.DATA.OFFSET_PP[0]
@@ -98,7 +107,6 @@ class LDP_Design:
         TR = pyproj.Transformer.from_crs( 'epsg:4326', self.DATA.LDP_CRS ) 
         LDP_E,LDP_N = TR.transform( row.lat, row.lng )
         return [UNDUL, h, HSF, PSF, CSF, CSF_ppm, LDP_E, LDP_N]
-        ### COL_LDP = ['UNDUL', 'h','HSF','PSF','CSF', 'CSF_ppm', 'LDP_E', 'LDP_N']
 
     def CreateLDP(self, FalseE, FalseN):
         if self.DATA.LDP[0] == 'TM':
@@ -107,7 +115,6 @@ class LDP_Design:
             LDP_STR = LCC.format(lat_0=parse_dms(self.DATA.LDP[1]),k_0=self.k0,x_0=FalseE,y_0=FalseN )
         else:
             print( f'UNKNOWN***LDP_TYPE = {self.LDP} ...'); raise Exception('***ERROR***')
-        #import pdb; pdb.set_trace()
         self.DATA['LDP_CRS'] = pyproj.CRS( LDP_STR )
 
     def _FindFalse(self, dfEN):
@@ -169,11 +176,14 @@ class LDP_Design:
         elif self.DATA.LDP[0]=='LCC':
             cm_sp = LineString( [ [ self.dfPP.lng.min(), parm['lat_0'] ],
                                   [ self.dfPP.lng.max(), parm['lat_0'] ] ] )
-        dfCM = gpd.GeoDataFrame( {'geometry':[ scale(cm_sp,xfact=1.25,yfact=1.25,origin='centroid'),] } )
-        dfCM.to_file(      f'./CACHE/{self.STEM}.gpkg', driver='GPKG', layer='CM_SP' )
-
-        #import pdb; pdb.set_trace()
-        self.dfPP.to_file( f'./CACHE/{self.STEM}.gpkg', driver='GPKG', layer='LDP_Analysis' )
+        dfCM = gpd.GeoDataFrame( 
+                {'geometry':[ scale(cm_sp,xfact=1.25,yfact=1.25,origin='centroid'),] },
+                                 crs='EPSG:4326' )
+        DEF_GPKG = Path( f'./CACHE/{self.STEM}.gpkg' )
+        print( f'Writing defintion GPKG : {DEF_GPKG} ...' ) 
+        if DEF_GPKG.exists(): DEF_GPKG.unlink()   # delete file
+        dfCM.to_file( DEF_GPKG, driver='GPKG', layer='CM_SP' )
+        self.dfPP.to_file( DEF_GPKG, driver='GPKG', layer='LDP_Definition' )
 
     def Print_Summary(self):
         print(f'=========================== LDP {self.DATA.LDP[0]} ===========================')
@@ -247,11 +257,12 @@ print(args)
 
 ldp = LDP_Design(args)
 ldp.Print_Summary()
+
+#import pdb ;pdb.set_trace()
 ldp.Print_Defintion()
 
 if args.csf: ldp.Print_CSFppm()
 if args.utm: ldp.Print_UTM()
-#import pdb ;pdb.set_trace()
 if 'UTM_LDP' in ldp.DATA.index:
     dfLDP = ldp.DoTransformation( 'UTM_LDP' )
     print( dfLDP.to_markdown( floatfmt=",.3f" ) )
