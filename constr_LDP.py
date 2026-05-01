@@ -12,11 +12,9 @@ History:
 
 """
 import warnings
-
 warnings.filterwarnings(
     "ignore",
-    message="You will likely lose important projection information",
-    category=UserWarning,
+    message="You will likely lose important projection information"
 )
 import tomllib
 import sys,re
@@ -29,6 +27,7 @@ import pygeodesy as pgd
 import pyproj
 import utm
 from pathlib import Path
+import matplotlib.pyplot as plt
 import argparse
 
 TM = '+proj=tmerc +lat_0=0.0 +lon_0={lon_0} +k_0={k_0} +x_0={x_0} +y_0={y_0}'\
@@ -185,6 +184,14 @@ class LDP_Design:
         dfCM.to_file( DEF_GPKG, driver='GPKG', layer='CM_SP' )
         self.dfPP.to_file( DEF_GPKG, driver='GPKG', layer='LDP_Definition' )
 
+        #import pdb ;pdb.set_trace()
+        ax = gpd.read_file( DEF_GPKG , layer="CM_SP").plot(
+                        facecolor='none', edgecolor='black')
+        gpd.read_file(DEF_GPKG , layer="LDP_Definition").plot(
+                        ax=ax, color='red')
+        plt.axis('equal')
+        plt.show()
+
     def Print_Summary(self):
         print(f'=========================== LDP {self.DATA.LDP[0]} ===========================')
         centr = MultiPoint(self.dfPP.geometry).centroid
@@ -210,9 +217,6 @@ class LDP_Design:
         epsg = self.dfPP.estimate_utm_crs().to_epsg()
         zn = str(epsg)[-2:]
         dfUTM = self.dfPP.to_crs( epsg )
-        #import pdb; pdb.set_trace()
-        ####utm_crs = pyproj.Proj(epsg)
-        ####PSF = ldp_crs.get_factors( row.lng, row.lat ).meridional_scale
         def makeUTM(row):
             utm_e = row.geometry.x ; utm_n = row.geometry.y 
             return utm_e,utm_n
@@ -246,8 +250,8 @@ class LDP_Design:
 ###########################################################################
 ###########################################################################
 parser = argparse.ArgumentParser( prog='constr_LDP',
-                    description='Calculate CSF from points defined by GPKG, CSV or single point',
-                    epilog='P.Santitamnont ( phisan.chula@gmail.com ) July,2024) ')
+            description='Calculate CSF from points defined by GPKG, CSV or single point',
+            epilog='P.Santitamnont ( phisan.chula@gmail.com ) July,2024) ')
 parser.add_argument('LDP_TOML', help="TOML file, LDP parameters e.g. LDP=['TM','99:38']")
 parser.add_argument('-c', '--csf', action='store_true', help='show CSF table') 
 parser.add_argument('-u', '--utm', action='store_true', help='show UTM-LDP table')
