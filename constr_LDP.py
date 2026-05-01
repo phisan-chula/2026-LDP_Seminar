@@ -51,7 +51,8 @@ class LDP_Design:
     def __init__(self, args ):
         self.ARGS = args
         self.STEM = Path( args.LDP_TOML ).stem
-        Path('./CACHE').mkdir( parents=True, exist_ok=True )
+        self.CACHE = Path( './CACHE' )
+        self.CACHE.mkdir( parents=True, exist_ok=True )
         self.GetOFFSET_PP()
         self.ELLPS  = pgd.datums.Ellipsoids.WGS84
         ###########################################################
@@ -67,7 +68,7 @@ class LDP_Design:
         self.MSL_PP = self.dfPP.MSL.mean() + self.DATA.OFFSET_PP[0]
         self.HAE_PP = UNDUL + self.MSL_PP                 # h = N + H
         RG = self.ELLPS.rocGauss( self.dfPP.lat.mean() )  # RG = sqrt(MN)
-        self.k0 = np.round(1 + self.HAE_PP/RG, 6)    #  M.Dennis 2016 : Ground Truth ... (...5 to 6 digits)
+        self.k0 = np.round(1 + self.HAE_PP/RG, 6)    #  M.Dennis 2016  6 digits)
         self.CTR_PAR = self.dfPP.lat.mean() 
         ##########################################################
         if (self.DATA['FALSE_EN'])=='AUTO':
@@ -167,7 +168,7 @@ class LDP_Design:
         PrintTwoLine( LDP_DEF)
         PrintTwoLine( LDP_DEF_)
         WKT = self.DATA.LDP_CRS.to_wkt( pretty=True )
-        with open( f'CACHE/{self.STEM}_CRS.WKT', 'w' ) as f:
+        with open( self.CACHE/ f'{self.STEM}_CRS.WKT', 'w' ) as f:
             f.write( WKT+'\n' )
         if self.DATA.LDP[0]=='TM':
             cm_sp = LineString( [ [ parm['lon_0'], self.dfPP.lat.min() ],
@@ -175,22 +176,46 @@ class LDP_Design:
         elif self.DATA.LDP[0]=='LCC':
             cm_sp = LineString( [ [ self.dfPP.lng.min(), parm['lat_0'] ],
                                   [ self.dfPP.lng.max(), parm['lat_0'] ] ] )
-        dfCM = gpd.GeoDataFrame( 
+        self.dfCM = gpd.GeoDataFrame( 
                 {'geometry':[ scale(cm_sp,xfact=1.25,yfact=1.25,origin='centroid'),] },
                                  crs='EPSG:4326' )
-        DEF_GPKG = Path( f'./CACHE/{self.STEM}.gpkg' )
+
+    def Plot_Definition(self): 
+        gdf_cm = self.dfCM ; gdf_pt = self.dfPP.copy()
+
+        DEF_GPKG = Path( self.CACHE / f'{self.STEM}.gpkg' )
         print( f'Writing defintion GPKG : {DEF_GPKG} ...' ) 
         if DEF_GPKG.exists(): DEF_GPKG.unlink()   # delete file
-        dfCM.to_file( DEF_GPKG, driver='GPKG', layer='CM_SP' )
-        self.dfPP.to_file( DEF_GPKG, driver='GPKG', layer='LDP_Definition' )
+        gdf_cm.to_file( DEF_GPKG, driver='GPKG', layer='CM_SP' )
+        gdf_pt.to_file( DEF_GPKG, driver='GPKG', layer='Point' )
 
-        #import pdb ;pdb.set_trace()
-        ax = gpd.read_file( DEF_GPKG , layer="CM_SP").plot(
-                        facecolor='none', edgecolor='black')
-        gpd.read_file(DEF_GPKG , layer="LDP_Definition").plot(
-                        ax=ax, color='red')
-        plt.axis('equal')
-        plt.show()
+        #import pdb; pdb.set_trace()
+        fig, ax = plt.subplots(figsize=(7, 7))
+        gdf_cm.plot(ax=ax, fc="none", ec="red",ls='-.',lw=3, alpha=0.5)
+        gdf_pt.plot(ax=ax, color="red", alpha=0.5)
+        for point, group in gdf_pt.groupby("Point"):
+            group = group.sort_values("MSL", ascending=False)
+            # get one coordinate (same point)
+            geom = group.geometry.iloc[0]
+            x, y = geom.x, geom.y
+            # build stacked text
+            lines = [str(point)]
+            for _, r in group.iterrows():
+                lines.append(f"{r['CSF_ppm']:+.0f} ppm @{r['MSL']:.0f}m")
+            label = "\n".join(lines)
+            ax.text( x, y, label, fontsize=8, ha='center', va='center')
+        p = gdf_cm.iloc[0].geometry.interpolate(0.5, normalized=True)  # midpoint
+        ax.text( p.x, p.y, "C.M.", ha='center', va='center', fontsize=16, color='red')
+        ax.set_aspect('equal')
+        ax.grid(True, color='black', alpha=0.5)
+        plt.xticks(rotation=90)
+        part1, part2 = str(self.DATA.LDP_CRS).split("+a=", 1)
+        title = part1.strip() + "\n" + "+a=" + part2.strip()
+        plt.title(title, fontsize=9)
+        DEF_PLT = Path( self.CACHE / f'{self.STEM}.svg' )
+        print( f'Writing definition plot : {DEF_PLT}...')
+        plt.savefig( DEF_PLT )
+        #plt.show()
 
     def Print_Summary(self):
         print(f'=========================== LDP {self.DATA.LDP[0]} ===========================')
@@ -262,11 +287,15 @@ print(args)
 ldp = LDP_Design(args)
 ldp.Print_Summary()
 
-#import pdb ;pdb.set_trace()
 ldp.Print_Defintion()
+ldp.Plot_Definition()
 
 if args.csf: ldp.Print_CSFppm()
+
 if args.utm: ldp.Print_UTM()
+
+import pdb ;pdb.set_trace()
+
 if 'UTM_LDP' in ldp.DATA.index:
     dfLDP = ldp.DoTransformation( 'UTM_LDP' )
     print( dfLDP.to_markdown( floatfmt=",.3f" ) )
@@ -274,5 +303,6 @@ if 'UTM_LDP' in ldp.DATA.index:
 if 'LDP_UTM' in ldp.DATA.index:
     dfUTM = ldp.DoTransformation( 'LDP_UTM' )
     print( dfUTM.to_markdown( floatfmt=",.3f" ) )
+
 ############################################################################
 
