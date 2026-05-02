@@ -1,5 +1,3 @@
-Here is the clean version of your **ReadMe.md** without the citation tags, formatted for immediate use in your repository.
-
 # Constr_LDP: Design of Low Distortion Projections
 
 **Constr_LDP** is a Python-based utility developed for engineers and surveyors to design **Low Distortion Projections (LDPs)**. It minimizes the linear distortion between projected grid coordinates and actual horizontal distances at the surface of an engineering project by optimizing the projection plane and scale factor ($k_0$).
