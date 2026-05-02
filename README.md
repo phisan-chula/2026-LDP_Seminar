@@ -15,7 +15,7 @@ The application follows a rigorous surveying workflow:
 2. **Elevation Scaling**: Converts MSL to Ellipsoidal Height ($h = H + N$) using the Geoid model.
 3. **Curvature Adjustment**: Computes $k_0$ using the Gaussian Radius of Curvature ($R_G$):
    $$k_0 = 1 + \frac{h_{PP}}{R_G}$$
-4. **Distortion Verification**: Validates the Combined Scale Factor (CSF) across the site to ensure minimal ppm (parts per million) error.
+4. **Distortion Verification**: Validates the Combined Scale Factor (CSF) across the site to ensure minimal ppm (parts per million) error, best practice recommends < +/- 20 ppm.
 
 ## Installation
 Ensure you have Python 3.11+ installed. Install the required dependencies via pip:
@@ -44,7 +44,7 @@ Example `MyLDP.toml`:
 ```toml
 PROJECT = "Udon Thani Construction"
 LDP = ["TM", "102:54"]
-FALSE_EN = "AUTO"
+FALSE_EN = "AUTO"   # Easting and Northing should be adjusted to distinct ranges to ensure ease of use and avoid confusion.
 
 [TEST_POINT]
 POS_LATLNG = [17.2677, 102.9139]
