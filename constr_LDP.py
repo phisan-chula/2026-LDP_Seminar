@@ -54,8 +54,8 @@ class LDP_Design:
     def __init__(self, args ):
         self.ARGS = args
         self.STEM = Path( args.LDP_TOML ).stem
-        self.CACHE = Path( './CACHE' )
-        self.CACHE.mkdir( parents=True, exist_ok=True )
+        self.RESULT = Path( './RESULT' )
+        self.RESULT.mkdir( parents=True, exist_ok=True )
         self.GetOFFSET_PP()
         self.ELLPS  = pgd.datums.Ellipsoids.WGS84
         ###########################################################
@@ -171,7 +171,7 @@ class LDP_Design:
         PrintTwoLine( LDP_DEF)
         PrintTwoLine( LDP_DEF_)
         WKT = self.DATA.LDP_CRS.to_wkt( pretty=True )
-        with open( self.CACHE/ f'{self.STEM}_CRS.WKT', 'w' ) as f:
+        with open( self.RESULT/ f'{self.STEM}_CRS.WKT', 'w' ) as f:
             f.write( WKT+'\n' )
         if self.DATA.LDP[0]=='TM':
             cm_sp = LineString( [ [ parm['lon_0'], self.dfPP.lat.min() ],
@@ -186,7 +186,7 @@ class LDP_Design:
     def Plot_Definition(self): 
         gdf_cm = self.dfCM ; gdf_pt = self.dfPP.copy()
 
-        DEF_GPKG = Path( self.CACHE / f'{self.STEM}.gpkg' )
+        DEF_GPKG = Path( self.RESULT / f'{self.STEM}.gpkg' )
         print( f'Writing defintion GPKG : {DEF_GPKG} ...' ) 
         if DEF_GPKG.exists(): DEF_GPKG.unlink()   # delete file
         gdf_cm.to_file( DEF_GPKG, driver='GPKG', layer='CM_SP' )
@@ -215,7 +215,7 @@ class LDP_Design:
         part1, part2 = str(self.DATA.LDP_CRS).split("+a=", 1)
         title = part1.strip() + "\n" + "+a=" + part2.strip()
         plt.title(title, fontsize=9)
-        DEF_PLT = Path( self.CACHE / f'{self.STEM}.svg' )
+        DEF_PLT = Path( self.RESULT / f'{self.STEM}.svg' )
         print( f'Writing definition plot : {DEF_PLT}...')
         plt.savefig( DEF_PLT )
         #plt.show()
