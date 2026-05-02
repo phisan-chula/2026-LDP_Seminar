@@ -59,4 +59,6 @@ BUFFER = [5000, 50]
 </p>
 
 ## License
-© 2022-2026 Phisan Santitamonont, Faculty of Engineering, Chulalongkorn University.
+MIT License
+Copyright (c) 2026 Phisan Santitamnont, Faculty of Engineering, Chulalongkorn University.
+Permission is hereby granted, free of charge, to any person obtaining a copy...
