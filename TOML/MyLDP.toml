@@ -4,8 +4,8 @@
 PROJECT   =  "My LDP Project at Udon Thani"
 
 LDP = [ "TM", '102:54' ]   #  TM with central meridian or LCC with starndar parallel
-#FALSE_EN    = 'AUTO'        # make coordinate look nice , compact and easier to handle
-FALSE_EN    = [ +24000 , -1835000 ]  # make coordinate look nice , compact and easier to handle
+FALSE_EN    = 'AUTO'        # make coordinate look nice , compact and easier to handle
+#FALSE_EN    = [ +24000 , -1835000 ]  # make coordinate look nice , compact and easier to handle
 
 
 [TEST_POINT]
