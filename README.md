@@ -55,9 +55,9 @@ BUFFER = [5000, 50]
 ```
 ## LDP Result
 - 📄 Report File  
-  [Download MyLDP.rep](https://raw.githubusercontent.com/phisan-chula/2026-LDP_Seminar/main/CACHE/MyLDP.rep)
+  [Download MyLDP.rep](https://raw.githubusercontent.com/phisan-chula/2026-LDP_Seminar/main/RESULT/MyLDP.rep)
 - 🖼️ SVG Preview  
-  ![MyLDP](CACHE/MyLDP.svg)
+  ![MyLDP](RESULT/MyLDP.svg)
 
 ## License
 MIT License
