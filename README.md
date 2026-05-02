@@ -1,17 +1,17 @@
 # Constr_LDP: Design of Low Distortion Projections
 
-**Constr_LDP** is a Python-based utility developed for engineers and surveyors to design **Low Distortion Projections (LDPs)**. It minimizes the linear distortion between projected grid coordinates and actual horizontal distances at the surface of an engineering project by optimizing the projection plane and scale factor ($k_0$).
+**Constr_LDP** is a Python-based utility developed for engineers and surveyors to design **Low Distortion Map Projections (LDPs)**. It minimizes the linear distortion between projected grid coordinates and actual horizontal distances at the surface of an engineering project by optimizing the projection plane and scale factor ($k_0$).
 
 ## Key Features
 * **Automated $k_0$ Calculation**: Determines the optimal scale factor based on the project's mean elevation and latitude.
 * **Support for Multiple Projections**: Supports Transverse Mercator (TM) and Lambert Conformal Conic (LCC).
-* **Geoid Awareness**: Utilizes the Karney Geoid model (TGM2017) for accurate ellipsoidal height transitions.
+* **Geoid Awareness**: Utilizes the Thai Geoid model 2017 (TGM2017) for ellipsoidal height transitions.
 * **Flexible Input**: Supports test points from GeoPackage (GPKG), Excel (XLSX), or synthetic buffers around a center point.
 * **GIS Ready**: Exports LDP definitions as WKT strings and GeoPackage layers for seamless integration with GIS software and total stations.
 
 ## Technical Methodology
 The application follows a rigorous surveying workflow:
-1. **Centroid Analysis**: Calculates the mean Latitude and MSL of the project site.
+1. **Centroid Analysis**: Calculates the mean Latitude using Gaussian radius of curvature and MSL of the project site.
 2. **Elevation Scaling**: Converts MSL to Ellipsoidal Height ($h = H + N$) using the Geoid model.
 3. **Curvature Adjustment**: Computes $k_0$ using the Gaussian Radius of Curvature ($R_G$):
    $$k_0 = 1 + \frac{h_{PP}}{R_G}$$
