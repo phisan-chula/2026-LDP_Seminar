@@ -53,6 +53,10 @@ POS_LATLNG = [17.2677, 102.9139]
 MSL = 125
 BUFFER = [5000, 50]
 ```
+## LDP Result
+<p align="center">
+  <img src="CACHE/MyLDP.svg" width="700"/>
+</p>
 
 ## License
 © 2022-2026 Phisan Santitamonont, Faculty of Engineering, Chulalongkorn University.
