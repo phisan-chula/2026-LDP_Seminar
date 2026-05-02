@@ -1,5 +1,3 @@
-The **ReadMe.md**[cite: 3] file is provided below. You can copy this content directly into a new text file named `ReadMe.md` in your project's root directory.
-
 # Constr_LDP: Design of Low Distortion Projections[cite: 3]
 
 **Constr_LDP** is a Python-based utility developed for engineers and surveyors to design **Low Distortion Projections (LDPs)**[cite: 3]. It minimizes the linear distortion between projected grid coordinates and actual horizontal distances at the surface of an engineering project by optimizing the projection plane and scale factor ($k_0$)[cite: 3].
