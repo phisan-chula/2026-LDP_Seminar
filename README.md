@@ -54,14 +54,10 @@ MSL = 125
 BUFFER = [5000, 50]
 ```
 ## LDP Result
-- 🖼️ SVG Preview  
-  ![MyLDP](CACHE/MyLDP.svg)
 - 📄 Report File  
   [Download MyLDP.rep](https://raw.githubusercontent.com/phisan-chula/2026-LDP_Seminar/main/CACHE/MyLDP.rep)
-
-<p align="center">
-  <img src="CACHE/MyLDP.svg" width="700"/>
-</p>
+- 🖼️ SVG Preview  
+  ![MyLDP](CACHE/MyLDP.svg)
 
 ## License
 MIT License
