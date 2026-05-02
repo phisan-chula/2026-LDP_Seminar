@@ -44,7 +44,9 @@ Example `MyLDP.toml`:
 ```toml
 PROJECT = "Udon Thani Construction"
 LDP = ["TM", "102:54"]
-FALSE_EN = "AUTO"   # Easting and Northing should be adjusted to distinct ranges to ensure ease of use and avoid confusion.
+FALSE_EN = "AUTO"   #  AUTO  or user-defined.
+# Easting and Northing should be adjusted to distinct ranges to ensure ease of use and avoid confusion.
+#FALSE_EN    = [ -82000 , -1860000 ]
 
 [TEST_POINT]
 POS_LATLNG = [17.2677, 102.9139]
