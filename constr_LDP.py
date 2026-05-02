@@ -16,7 +16,10 @@ warnings.filterwarnings(
     "ignore",
     message="You will likely lose important projection information"
 )
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 import sys,re
 import numpy as np
 import pandas as pd
