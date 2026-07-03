@@ -9,17 +9,14 @@ Faculty of Engineering, Chulalongkorn University ©2022-2026
 
 History:  
   Initial : 30 May 2024
-
+  Update: 3 July 2026 , replace a=.... b=..... with +datum=WGS84
 """
 import warnings
 warnings.filterwarnings(
     "ignore",
     message="You will likely lose important projection information"
 )
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib
+import tomllib
 import sys,re
 import numpy as np
 import pandas as pd
@@ -34,9 +31,9 @@ import matplotlib.pyplot as plt
 import argparse
 
 TM = '+proj=tmerc +lat_0=0.0 +lon_0={lon_0} +k_0={k_0} +x_0={x_0} +y_0={y_0}'\
-     ' +a=6378137.0 +b=6356752.3142 +units=m +no_defs'
+     ' +datum=WGS84 +units=m +no_defs'
 LCC = '+proj=lcc +lat_1={lat_0} +lat_0={lat_0} +lon_0=0  +k_0={k_0}'\
-      ' +x_0={x_0} +y_0={y_0} +a=6378137.0 +b=6356752.3142 +units=m +no_defs'
+      ' +x_0={x_0} +y_0={y_0} +datum=WGS84 +units=m +no_defs'
 COL_LDP = ['UNDUL', 'h','HSF','PSF','CSF', 'CSF_ppm', 'LDP_E', 'LDP_N']
 
 def dd2DMS( dd, PREC=7, POS=''  ):
@@ -54,8 +51,8 @@ class LDP_Design:
     def __init__(self, args ):
         self.ARGS = args
         self.STEM = Path( args.LDP_TOML ).stem
-        self.RESULT = Path( './RESULT' )
-        self.RESULT.mkdir( parents=True, exist_ok=True )
+        self.CACHE = Path( './CACHE' )
+        self.CACHE.mkdir( parents=True, exist_ok=True )
         self.GetOFFSET_PP()
         self.ELLPS  = pgd.datums.Ellipsoids.WGS84
         ###########################################################
@@ -171,7 +168,7 @@ class LDP_Design:
         PrintTwoLine( LDP_DEF)
         PrintTwoLine( LDP_DEF_)
         WKT = self.DATA.LDP_CRS.to_wkt( pretty=True )
-        with open( self.RESULT/ f'{self.STEM}_CRS.WKT', 'w' ) as f:
+        with open( self.CACHE/ f'{self.STEM}_CRS.WKT', 'w' ) as f:
             f.write( WKT+'\n' )
         if self.DATA.LDP[0]=='TM':
             cm_sp = LineString( [ [ parm['lon_0'], self.dfPP.lat.min() ],
@@ -186,7 +183,7 @@ class LDP_Design:
     def Plot_Definition(self): 
         gdf_cm = self.dfCM ; gdf_pt = self.dfPP.copy()
 
-        DEF_GPKG = Path( self.RESULT / f'{self.STEM}.gpkg' )
+        DEF_GPKG = Path( self.CACHE / f'{self.STEM}.gpkg' )
         print( f'Writing defintion GPKG : {DEF_GPKG} ...' ) 
         if DEF_GPKG.exists(): DEF_GPKG.unlink()   # delete file
         gdf_cm.to_file( DEF_GPKG, driver='GPKG', layer='CM_SP' )
@@ -212,10 +209,10 @@ class LDP_Design:
         ax.set_aspect('equal')
         ax.grid(True, color='black', alpha=0.5)
         plt.xticks(rotation=90)
-        part1, part2 = str(self.DATA.LDP_CRS).split("+a=", 1)
+        part1, part2 = str(self.DATA.LDP_CRS).split("+datum=", 1)
         title = part1.strip() + "\n" + "+a=" + part2.strip()
         plt.title(title, fontsize=9)
-        DEF_PLT = Path( self.RESULT / f'{self.STEM}.svg' )
+        DEF_PLT = Path( self.CACHE / f'{self.STEM}.svg' )
         print( f'Writing definition plot : {DEF_PLT}...')
         plt.savefig( DEF_PLT )
         #plt.show()
@@ -238,7 +235,7 @@ class LDP_Design:
     def Print_CSFppm(self):
         print(f'===================== CSF_ppm Distribution =====================')
         COLS = ['Point', 'lng', 'lat', 'MSL', 'CSF_ppm', 'LDP_E', 'LDP_N']
-        FMT = [ None, None, ',.6f', ',.6f', '+,.1f', '+,.1f', ',.3f', ',.3f', ] 
+        FMT = [ None, None, ',.8f', ',.8f', '+,.1f', '+,.1f', ',.3f', ',.3f', ] 
         print( self.dfPP[COLS].to_markdown( floatfmt=FMT ) )
 
     def Print_UTM(self):
