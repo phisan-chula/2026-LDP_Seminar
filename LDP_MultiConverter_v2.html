@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Udon LDP Multi-System Coordinate Converter</title>
+  <script src="https://cdn.jsdelivr.net/npm/proj4@2.11.0/dist/proj4.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --soft: #f3f4f6;
+      --soft2: #ecfdf5;
+      --primary: #0f766e;
+      --primary2: #115e59;
+      --danger: #b91c1c;
+      --warn: #92400e;
+      --ok: #047857;
+      --shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(20, 184, 166, 0.18), transparent 32rem),
+        radial-gradient(circle at top right, rgba(59, 130, 246, 0.13), transparent 30rem),
+        linear-gradient(135deg, #f8fafc, #eef6f4);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(1320px, calc(100% - 32px));
+      margin: 28px auto 44px;
+    }
+
+    header {
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 3vw, 2.45rem);
+      color: var(--primary2);
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(15, 118, 110, 0.2);
+      color: var(--primary2);
+      font-size: 0.88rem;
+      font-weight: 650;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.95fr) minmax(460px, 1.35fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(209, 213, 219, 0.85);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .card-head {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(236, 253, 245, 0.9), rgba(255,255,255,0.68));
+    }
+
+    .card-head h2 {
+      margin: 0;
+      color: var(--primary2);
+      font-size: 1.06rem;
+      letter-spacing: -0.015em;
+    }
+
+    .card-body { padding: 16px 18px 18px; }
+
+    label {
+      display: block;
+      font-weight: 750;
+      font-size: 0.88rem;
+      margin: 0 0 7px;
+      color: #374151;
+    }
+
+    textarea, input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 13px;
+      font: 0.93rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+      transition: border 0.15s, box-shadow 0.15s;
+    }
+
+    textarea:focus, input:focus, select:focus {
+      border-color: rgba(15, 118, 110, 0.75);
+      box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.14);
+    }
+
+    #inputText { min-height: 268px; resize: vertical; }
+    #ldpProj { min-height: 108px; resize: vertical; }
+
+    .hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.42;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .08s, box-shadow .12s, background .12s;
+      letter-spacing: -0.01em;
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      box-shadow: 0 12px 22px rgba(15, 118, 110, 0.23);
+    }
+
+    .secondary {
+      color: var(--primary2);
+      background: #e6fffb;
+      border: 1px solid rgba(15, 118, 110, 0.2);
+    }
+
+    .plain {
+      color: #374151;
+      background: #f9fafb;
+      border: 1px solid var(--line);
+    }
+
+    .danger {
+      color: var(--danger);
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .mini-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .status {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .pill {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 13px;
+    }
+
+    .pill small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      margin-bottom: 3px;
+    }
+
+    .pill strong {
+      font-size: 1.06rem;
+      color: var(--primary2);
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      max-height: 560px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      min-width: 1060px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft2);
+      color: var(--primary2);
+      border-bottom: 1px solid var(--line);
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #edf2f7;
+      text-align: right;
+      vertical-align: top;
+    }
+
+    td:first-child, th:first-child,
+    td:nth-child(2), th:nth-child(2),
+    td:nth-child(3), th:nth-child(3),
+    td:last-child, th:last-child {
+      text-align: left;
+    }
+
+    tbody tr:hover { background: #f8fafc; }
+
+    .ok { color: var(--ok); font-weight: 700; }
+    .bad { color: var(--danger); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+    .muted { color: var(--muted); }
+
+    .notes {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #5f430a;
+      font-size: 0.87rem;
+      line-height: 1.45;
+    }
+
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      background: rgba(15,23,42,0.06);
+      padding: 1px 5px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>Udon LDP Coordinate Converter , Phisan.Chula@gmail.com</h1>
+        <p class="subtitle">Convert WGS84 latitude/longitude, UTM Zone 47/48N, and editable LDP Transverse Mercator coordinates.</p>
+      </div>
+      <div class="badge">PROJ-style JavaScript converter · proj4js</div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <div class="card-head">
+          <h2>Input</h2>
+        </div>
+        <div class="card-body">
+          <label for="inputText">Paste points: WGS84, UTM, or LDP</label>
+          <textarea id="inputText" spellcheck="false">P0 102.91345300 17.26843200
+P1 102.95849805 17.31347705
+
+RTK1  48 278,234.264   1,910,375.866    # UTM zone 48
+RTK2  48 283,077.529   1,915,310.503    # UTM zone 48
+
+BLDG1 LDP 31,486.458 79,969.828  # LDP
+BLDG2 LDP 36,274.799 84,956.055  # LDP</textarea>
+          <p class="hint">
+            Accepted formats: <span class="code">P0 lon lat</span>, <span class="code">P0 lat lon</span>, <span class="code">RTK1 48 E N</span>, <span class="code">RTK1 UTM48 E N</span>, <span class="code">BLDG1 LDP E N</span>. Comments after <span class="code">#</span> are ignored. Commas in numbers are OK.
+          </p>
+
+          <div class="two">
+            <div>
+              <label for="defaultUtmZone">Default UTM zone for ambiguous UTM</label>
+              <select id="defaultUtmZone">
+                <option value="48" selected>48N</option>
+                <option value="47">47N</option>
+              </select>
+            </div>
+            <div>
+              <label for="hemisphere">UTM hemisphere</label>
+              <select id="hemisphere">
+                <option value="north" selected>North</option>
+                <option value="south">South</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button class="primary" onclick="convertAll()">Convert to all systems</button>
+            <button class="secondary" onclick="downloadCSV()">Save CSV</button>
+            <button class="plain" onclick="loadSample()">Load sample</button>
+            <button class="danger" onclick="clearAll()">Clear</button>
+          </div>
+
+          <div class="notes">
+            <strong>Detection rule:</strong> if the second token is <span class="code">LDP</span>, the row is LDP. If it is <span class="code">47</span>, <span class="code">48</span>, <span class="code">UTM47</span>, or <span class="code">UTM48</span>, the row is UTM. Numeric thousands commas such as <span class="code">278,234.264</span> are preserved as one number; commas between fields are still accepted. Otherwise two numeric values are treated as WGS84 and the app detects lon/lat vs lat/lon by value range.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Editable LDP Definition</h2>
+        </div>
+        <div class="card-body">
+          <label for="ldpProj">LDP PROJ string</label>
+          <textarea id="ldpProj" spellcheck="false">+proj=tmerc +lat_0=0.0 +lon_0=102.9 +k_0=1.000006 +x_0=30000 +y_0=-1830000 +datum=WGS84 +units=m +no_defs +type=crs</textarea>
+          <p class="hint">Edit central meridian, scale factor, false easting/northing, or ellipsoid. Press convert again after editing.</p>
+
+          <div class="mini-row">
+            <button class="plain" onclick="resetLDP()">Reset LDP definition</button>
+            <button class="plain" onclick="copyCSVToClipboard()">Copy CSV</button>
+          </div>
+
+          <div class="notes" id="messageBox">
+            Ready. Paste coordinates and press convert.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:18px;">
+      <div class="card-head">
+        <h2>Result Table</h2>
+      </div>
+      <div class="card-body">
+        <div class="status">
+          <div class="pill"><small>Total rows</small><strong id="statTotal">0</strong></div>
+          <div class="pill"><small>Converted</small><strong id="statOk">0</strong></div>
+          <div class="pill"><small>Errors / Warnings</small><strong id="statErr">0</strong></div>
+        </div>
+        <div class="table-wrap">
+          <table id="resultTable">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Point</th>
+                <th>Input</th>
+                <th>Longitude</th>
+                <th>Latitude</th>
+                <th>UTM Zone</th>
+                <th>UTM_E</th>
+                <th>UTM_N</th>
+                <th>LDP_E</th>
+                <th>LDP_N</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Udon LDP · WGS84 / UTM / LDP converter · use full coordinate precision for mm-level comparison
+    </footer>
+  </main>
+
+  <script>
+    const DEFAULT_LDP = "+proj=tmerc +lat_0=0.0 +lon_0=102.9 +k_0=1.000006 +x_0=30000 +y_0=-1830000 +datum=WGS84 +units=m +no_defs +type=crs";
+    const WGS84 = "+proj=longlat +datum=WGS84 +no_defs +type=crs";
+    let lastResults = [];
+
+    function byId(id) { return document.getElementById(id); }
+
+    function cleanNumber(text) {
+      if (text === undefined || text === null) return NaN;
+      return Number(String(text).replace(/,/g, ""));
+    }
+
+    function fmt(value, decimals, useComma = true) {
+      if (!Number.isFinite(value)) return "";
+      return value.toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+        useGrouping: useComma
+      });
+    }
+
+    function csvFmt(value, decimals) {
+      if (!Number.isFinite(value)) return "";
+      return value.toFixed(decimals);
+    }
+
+    function utmProj(zone, hemisphere) {
+      const south = hemisphere === "south" ? " +south" : "";
+      return `+proj=utm +zone=${zone}${south} +datum=WGS84 +units=m +no_defs +type=crs`;
+    }
+
+    function autoUtmZone(lon) {
+      return Math.floor((lon + 180) / 6) + 1;
+    }
+
+    function stripComment(line) {
+      return line.split("#")[0].trim();
+    }
+
+    function isGroupedNumberToken(token) {
+      // Examples: 278,234.264 ; 1,910,375.866 ; -31,486.458
+      return /^[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(token);
+    }
+
+    function tokenize(line) {
+      const noComment = stripComment(line);
+      const roughTokens = noComment.split(/[\s|]+/).filter(Boolean);
+      const tokens = [];
+
+      for (const rough of roughTokens) {
+        if (isGroupedNumberToken(rough)) {
+          // Keep 278,234.264 as ONE number by removing thousands commas only.
+          tokens.push(rough.replace(/,/g, ""));
+        } else {
+          // Here commas are field separators, e.g. P0,102.913453,17.268432
+          for (const part of rough.split(",")) {
+            if (part) tokens.push(part);
+          }
+        }
+      }
+      return tokens;
+    }
+
+    function parseLine(rawLine, lineNo) {
+      const line = stripComment(rawLine);
+      if (!line) return null;
+
+      const tokens = tokenize(rawLine);
+      if (tokens.length < 3) {
+        return { lineNo, rawLine, ok: false, status: "Not enough tokens" };
+      }
+
+      const point = tokens[0];
+      const tag = String(tokens[1]).toUpperCase();
+      const defaultZone = Number(byId("defaultUtmZone").value || 48);
+
+      if (tag === "LDP") {
+        if (tokens.length < 4) return { lineNo, point, rawLine, ok: false, status: "LDP requires: Point LDP E N" };
+        return {
+          lineNo, point, rawLine, ok: true, inputType: "LDP",
+          ldpE: cleanNumber(tokens[2]), ldpN: cleanNumber(tokens[3])
+        };
+      }
+
+      const utmMatch = tag.match(/^UTM\s*(\d{1,2})?N?$/i);
+      if (utmMatch || tag === "47" || tag === "48") {
+        let zone = defaultZone;
+        let start = 2;
+        if (tag === "47" || tag === "48") {
+          zone = Number(tag);
+        } else if (utmMatch && utmMatch[1]) {
+          zone = Number(utmMatch[1]);
+        } else if (tokens.length >= 5 && /^\d{1,2}$/.test(tokens[2])) {
+          zone = Number(tokens[2]);
+          start = 3;
+        }
+        if (tokens.length < start + 2) return { lineNo, point, rawLine, ok: false, status: "UTM requires: Point Zone E N" };
+        return {
+          lineNo, point, rawLine, ok: true, inputType: `UTM${zone}`,
+          utmZone: zone, utmE: cleanNumber(tokens[start]), utmN: cleanNumber(tokens[start + 1])
+        };
+      }
+
+      const a = cleanNumber(tokens[1]);
+      const b = cleanNumber(tokens[2]);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) {
+        return { lineNo, point, rawLine, ok: false, status: "Cannot parse numeric coordinates" };
+      }
+
+      let lon, lat, inputType;
+      if (Math.abs(a) <= 90 && Math.abs(b) <= 180 && Math.abs(b) > 90) {
+        lat = a; lon = b; inputType = "WGS84 lat,lon";
+      } else if (Math.abs(a) <= 180 && Math.abs(b) <= 90) {
+        lon = a; lat = b; inputType = "WGS84 lon,lat";
+      } else {
+        return { lineNo, point, rawLine, ok: false, status: "Ambiguous WGS84 coordinate range" };
+      }
+
+      return { lineNo, point, rawLine, ok: true, inputType, lon, lat };
+    }
+
+    function validateFinite(row, fields) {
+      for (const f of fields) {
+        if (!Number.isFinite(row[f])) return `${f} is not numeric`;
+      }
+      return "";
+    }
+
+    function convertRow(parsed, ldpProj, hemisphere) {
+      if (!parsed.ok) return { ...parsed, converted: false };
+
+      try {
+        let lon, lat, utmZone, utmE, utmN, ldpE, ldpN;
+        let status = "OK";
+
+        if (parsed.inputType.startsWith("WGS84")) {
+          const err = validateFinite(parsed, ["lon", "lat"]);
+          if (err) throw new Error(err);
+          lon = parsed.lon;
+          lat = parsed.lat;
+          utmZone = autoUtmZone(lon);
+          [utmE, utmN] = proj4(WGS84, utmProj(utmZone, hemisphere), [lon, lat]);
+          [ldpE, ldpN] = proj4(WGS84, ldpProj, [lon, lat]);
+        } else if (parsed.inputType.startsWith("UTM")) {
+          const err = validateFinite(parsed, ["utmE", "utmN"]);
+          if (err) throw new Error(err);
+          utmZone = parsed.utmZone;
+          utmE = parsed.utmE;
+          utmN = parsed.utmN;
+          [lon, lat] = proj4(utmProj(utmZone, hemisphere), WGS84, [utmE, utmN]);
+          [ldpE, ldpN] = proj4(WGS84, ldpProj, [lon, lat]);
+        } else if (parsed.inputType === "LDP") {
+          const err = validateFinite(parsed, ["ldpE", "ldpN"]);
+          if (err) throw new Error(err);
+          ldpE = parsed.ldpE;
+          ldpN = parsed.ldpN;
+          [lon, lat] = proj4(ldpProj, WGS84, [ldpE, ldpN]);
+          utmZone = autoUtmZone(lon);
+          [utmE, utmN] = proj4(WGS84, utmProj(utmZone, hemisphere), [lon, lat]);
+        } else {
+          throw new Error("Unknown input type");
+        }
+
+        if (!Number.isFinite(lon) || !Number.isFinite(lat) || !Number.isFinite(ldpE) || !Number.isFinite(ldpN)) {
+          throw new Error("Projection returned non-finite result");
+        }
+
+        if (utmZone !== 47 && utmZone !== 48) {
+          status = `OK, UTM zone ${utmZone}`;
+        }
+
+        return {
+          ...parsed,
+          converted: true,
+          lon, lat, utmZone, utmE, utmN, ldpE, ldpN,
+          status
+        };
+      } catch (err) {
+        return { ...parsed, converted: false, status: err.message || String(err) };
+      }
+    }
+
+    function convertAll() {
+      const input = byId("inputText").value;
+      const ldpProj = byId("ldpProj").value.trim();
+      const hemisphere = byId("hemisphere").value;
+
+      if (typeof proj4 === "undefined") {
+        setMessage("proj4js is not loaded. Check internet connection or CDN access.", "bad");
+        return;
+      }
+
+      if (!ldpProj) {
+        setMessage("LDP PROJ string is empty.", "bad");
+        return;
+      }
+
+      try {
+        // Force proj4 to parse the editable CRS before processing rows.
+        proj4(WGS84, ldpProj, [102.9, 17.3]);
+      } catch (err) {
+        setMessage(`Invalid LDP definition: ${err.message || err}`, "bad");
+        return;
+      }
+
+      const lines = input.split(/\r?\n/);
+      const parsed = [];
+      lines.forEach((line, idx) => {
+        const row = parseLine(line, idx + 1);
+        if (row) parsed.push(row);
+      });
+
+      lastResults = parsed.map(row => convertRow(row, ldpProj, hemisphere));
+      renderTable(lastResults);
+
+      const ok = lastResults.filter(r => r.converted).length;
+      const err = lastResults.length - ok;
+      byId("statTotal").textContent = lastResults.length;
+      byId("statOk").textContent = ok;
+      byId("statErr").textContent = err;
+
+      if (lastResults.length === 0) {
+        setMessage("No input rows found.", "warn");
+      } else if (err > 0) {
+        setMessage(`Converted ${ok} row(s), ${err} row(s) need checking.`, "warn");
+      } else {
+        setMessage(`Converted ${ok} row(s) successfully.`, "ok");
+      }
+    }
+
+    function renderTable(rows) {
+      const tbody = byId("resultTable").querySelector("tbody");
+      tbody.innerHTML = "";
+
+      rows.forEach((r, idx) => {
+        const tr = document.createElement("tr");
+        const statusClass = r.converted ? (String(r.status).startsWith("OK") ? "ok" : "warn") : "bad";
+        tr.innerHTML = `
+          <td>${idx}</td>
+          <td>${escapeHtml(r.point || "")}</td>
+          <td>${escapeHtml(r.inputType || "-")}</td>
+          <td>${fmt(r.lon, 10, false)}</td>
+          <td>${fmt(r.lat, 10, false)}</td>
+          <td>${r.utmZone ? r.utmZone + "N" : ""}</td>
+          <td>${fmt(r.utmE, 3)}</td>
+          <td>${fmt(r.utmN, 3)}</td>
+          <td>${fmt(r.ldpE, 4)}</td>
+          <td>${fmt(r.ldpN, 4)}</td>
+          <td class="${statusClass}">${escapeHtml(r.status || "")}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function makeCSV() {
+      const header = [
+        "No", "Point", "Input", "Longitude", "Latitude", "UTM_Zone", "UTM_E", "UTM_N", "LDP_E", "LDP_N", "Status"
+      ];
+      const lines = [header.join(",")];
+      lastResults.forEach((r, idx) => {
+        const row = [
+          idx,
+          csvCell(r.point || ""),
+          csvCell(r.inputType || ""),
+          csvFmt(r.lon, 10),
+          csvFmt(r.lat, 10),
+          r.utmZone ? `${r.utmZone}N` : "",
+          csvFmt(r.utmE, 3),
+          csvFmt(r.utmN, 3),
+          csvFmt(r.ldpE, 4),
+          csvFmt(r.ldpN, 4),
+          csvCell(r.status || "")
+        ];
+        lines.push(row.join(","));
+      });
+      return lines.join("\n");
+    }
+
+    function csvCell(value) {
+      const s = String(value);
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    }
+
+    function downloadCSV() {
+      if (!lastResults.length) convertAll();
+      if (!lastResults.length) return;
+      const csv = makeCSV();
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Udon_LDP_result.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    async function copyCSVToClipboard() {
+      if (!lastResults.length) convertAll();
+      if (!lastResults.length) return;
+      try {
+        await navigator.clipboard.writeText(makeCSV());
+        setMessage("CSV copied to clipboard.", "ok");
+      } catch (err) {
+        setMessage("Cannot copy automatically. Use Save CSV instead.", "warn");
+      }
+    }
+
+    function setMessage(text, kind) {
+      const box = byId("messageBox");
+      const cls = kind === "bad" ? "bad" : kind === "warn" ? "warn" : "ok";
+      box.innerHTML = `<span class="${cls}">${escapeHtml(text)}</span>`;
+    }
+
+    function resetLDP() {
+      byId("ldpProj").value = DEFAULT_LDP;
+      setMessage("LDP definition reset.", "ok");
+    }
+
+    function loadSample() {
+      byId("inputText").value = `P0 102.91345300 17.26843200
+P1 102.95849805 17.31347705
+
+RTK1  48 278,234.264   1,910,375.866    # UTM zone 48
+RTK2  48 283,077.529   1,915,310.503    # UTM zone 48
+
+BLDG1 LDP 31,486.458 79,969.828  # LDP
+BLDG2 LDP 36,274.799 84,956.055  # LDP`;
+      setMessage("Sample loaded.", "ok");
+    }
+
+    function clearAll() {
+      byId("inputText").value = "";
+      lastResults = [];
+      renderTable([]);
+      byId("statTotal").textContent = "0";
+      byId("statOk").textContent = "0";
+      byId("statErr").textContent = "0";
+      setMessage("Cleared.", "ok");
+    }
+
+    window.addEventListener("DOMContentLoaded", convertAll);
+  </script>
+</body>
+</html>
